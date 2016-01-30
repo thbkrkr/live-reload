@@ -1,0 +1,29 @@
+#!/bin/bash -eu
+#
+# Live reload for Scala programs.
+#
+# Execute `sbt run` when files changed.
+
+kill_and_build() {
+  set +e
+  pid=$(jps | grep sbt | grep -o "[0-9]*")
+  [ "$pid" != "" ] && kill -9 $pid
+  set -e
+  echo "sbt run... !"
+  nohup sbt run  > sbt.log 2>&1 &
+  cat sbt.log
+}
+
+watch_files() {
+  inotifywait -qe create,delete,modify \
+    $(find $(pwd) -name "*.scala" -or -name "*.sbt")
+}
+
+main() {
+  kill_and_build "$@"
+  while true; do
+    watch_files && kill_and_build "$@"
+  done
+}
+
+main "$@"

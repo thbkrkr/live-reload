@@ -1,0 +1,26 @@
+#!/bin/bash -eu
+#
+# Live reload for Docker builds.
+#
+# Execute `docker build` when files changed.
+
+here=$(pwd)
+
+build() {
+  docker build --force-rm=true -t="$1" .
+}
+
+watch_files() {
+  inotifywait -qe create,delete,modify \
+    $(find $here -type f)
+}
+
+main() {
+  cd $here
+  build "$@"
+  while true; do
+    watch_files && build "$@"
+  done
+}
+
+main "$@"
